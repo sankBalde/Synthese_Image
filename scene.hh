@@ -1,34 +1,21 @@
 #pragma once
-
-#include "textureMaterial.hh"
+#include <vector>
 #include "vector3.hh"
-#include "ray.hh"
 
-class Object {
-public:
-    virtual double hit_object(const Ray& r) const = 0;
-    virtual Vector3::Vector3 normal_vector(const Ray& r, double t) const = 0;
-    virtual Vector3::Color ray_color(const Ray& r, const Vector3::Vector3& lightDirection) const = 0;
-    virtual ~Object() {}
 
-    void setTextureMaterial(const TextureMaterial& textureMaterial) {
-        this->textureMaterial = &textureMaterial;
-    }
-
-protected:
-    const TextureMaterial* textureMaterial;
-};
-
-class Sphere : public Object
+class Sphere
 {
 public:
+    double radius = 0.5;
+    Vector3::Point3 sphere_center{0, 0, -1};
+    Vector3::Color sphere_color{1, 0, 0};
 
     Sphere() = default;
     Sphere(Vector3::Point3 sphere_center, double radius, Vector3::Color sphere_color) : radius{radius},
                                                                                         sphere_center{sphere_center},
                                                                                         sphere_color{sphere_color}{}
 
-    double hit_object(const Ray& r) const{
+    double hit_sphere(const Ray& r) {
         Vector3::Vector3 oc = r.origine() - sphere_center;
         auto a = dot(r.direction(), r.direction());
         auto b = 2.0 * dot(oc, r.direction());
@@ -41,40 +28,29 @@ public:
         }
     }
 
-    double to_positive(double dot) const{
+    double to_positive(double dot) {
         if (dot < 0.0)
             return 0.0;
         else
             return dot;
     }
 
-    Vector3::Vector3 normal_vector(const Ray& r, double t) const
+    Vector3::Vector3 normal_vector(const Ray& r, double t)
     {
         Vector3::Vector3 normal = unit_vector(r.at(t) - sphere_center);
         return normal;
     }
 
-    Vector3::Color ray_color(const Ray& r, const Vector3::Vector3& lightDirection) const{
-        auto t = hit_object(r);
+    Vector3::Color ray_color(const Ray& r, const Vector3::Vector3& lightDirection) {
+        auto t = hit_sphere(r);
         if (t > 0.0) {
             Vector3::Vector3 normal = normal_vector(r, t);
             double cos_angle_normal_light = to_positive(Vector3::dot(normal, -lightDirection));
-            // Obtenir les paramètres de texture à partir du matériau de texture
-            if (textureMaterial) {
-                Vector3::Vector3 textureParams = textureMaterial->getParametersAtPosition(sphere_center);
-                // Utilisez les paramètres de texture pour modifier la couleur
-                return sphere_color * textureParams * cos_angle_normal_light;
-            } else {
-                // Si aucun matériau de texture n'est défini, utilisez simplement la couleur de la sphère
-                return sphere_color * cos_angle_normal_light;
-            }
+            return sphere_color * cos_angle_normal_light; // Multiplier par la couleur de la lumière
         }
         return Vector3::Color(0,0,0);
     }
-private:
-    double radius = 0.5;
-    Vector3::Point3 sphere_center{0, 0, -1};
-    Vector3::Color sphere_color{1, 0, 0};
+
 };
 
 class Light
@@ -142,4 +118,5 @@ public:
     Scene() = default;
     Scene(std::vector<Sphere> spheres, std::vector<Light> lights, Camera camera): spheres_{std::move(spheres)},
                                                                                   lights_{std::move(lights)}, camera_{camera} {}
+
 };
