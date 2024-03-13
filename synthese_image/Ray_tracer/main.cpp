@@ -60,6 +60,11 @@ int main() {
     Vector3::Color mars_color{1, 0, 0};
     Sphere mars{mars_center, 0.2, mars_color};
 
+    sun.setTextureMaterial(UniformTexture());
+    mercury.setTextureMaterial(UniformTexture());
+    venus.setTextureMaterial(UniformTexture());
+    earth.setTextureMaterial(UniformTexture());
+    mars.setTextureMaterial(UniformTexture());
     std::vector<Sphere> spheres{sun, mercury, venus, earth, mars};
 
 // Caméra
@@ -86,7 +91,7 @@ int main() {
             double hitDistance = std::numeric_limits<double>::max();
 
             for (auto& sphere : scene.spheres_) {
-                auto t = sphere.hit_sphere(r);
+                auto t = sphere.hit_object(r);
                 if (t > 0.0 && t < hitDistance) {
                     closestSphere = &sphere;
                     hitDistance = t;
@@ -106,6 +111,6 @@ int main() {
 
 
     auto img = Image(image_width, image_height, pixels_);
-    img.save_image("../../../Desktop/solarSystem.ppm");
+    img.save_image("../../../../Desktop/solarSystem3.ppm");
     //img.save_image("images/imgRendered.ppm");
 }
