@@ -4,6 +4,13 @@
 #include "vector3.hh"
 #include "ray.hh"
 
+inline double to_positive(double dot) {
+    if (dot < 0.0)
+        return 0.0;
+    else
+        return dot;
+}
+
 class Object {
 public:
     virtual double hit_object(const Ray& r) const = 0;
@@ -15,7 +22,6 @@ public:
         this->textureMaterial = &textureMaterial;
     }
 
-protected:
     const TextureMaterial* textureMaterial;
 };
 
@@ -28,7 +34,7 @@ public:
                                                                                         sphere_center{sphere_center},
                                                                                         sphere_color{sphere_color}{}
 
-    double hit_object(const Ray& r) const{
+    double hit_object(const Ray& r) const override{
         Vector3::Vector3 oc = r.origine() - sphere_center;
         auto a = dot(r.direction(), r.direction());
         auto b = 2.0 * dot(oc, r.direction());
@@ -41,37 +47,38 @@ public:
         }
     }
 
-    double to_positive(double dot) const{
-        if (dot < 0.0)
-            return 0.0;
-        else
-            return dot;
-    }
-
-    Vector3::Vector3 normal_vector(const Ray& r, double t) const
+    Vector3::Vector3 normal_vector(const Ray& r, double t) const override
     {
         Vector3::Vector3 normal = unit_vector(r.at(t) - sphere_center);
         return normal;
     }
+    static Vector3::Vector3 reflect(const Vector3::Vector3& incident, const Vector3::Vector3& normal)  {
+        return incident - 2 * dot(incident, normal) * normal;
+    }
 
-    Vector3::Color ray_color(const Ray& r, const Vector3::Vector3& lightDirection) const{
+    Vector3::Color ray_color(const Ray& r, const Vector3::Vector3& lightDirection) const override {
         auto t = hit_object(r);
         if (t > 0.0) {
             Vector3::Vector3 normal = normal_vector(r, t);
             double cos_angle_normal_light = to_positive(Vector3::dot(normal, -lightDirection));
-            // Obtenir les paramètres de texture à partir du matériau de texture
-            if (textureMaterial) {
-                Vector3::Vector3 textureParams = textureMaterial->getParametersAtPosition(sphere_center);
-                // Utilisez les paramètres de texture pour modifier la couleur
-                return sphere_color * textureParams * cos_angle_normal_light;
-            } else {
-                // Si aucun matériau de texture n'est défini, utilisez simplement la couleur de la sphère
-                return sphere_color * cos_angle_normal_light;
+            Vector3::Color diffuse_color = sphere_color * cos_angle_normal_light;
+
+            // Gérer la réflexion si la sphère est réfléchissante
+            if (isReflective) {
+                Vector3::Vector3 reflection_direction = reflect(r.direction(), normal);
+                Ray reflected_ray(r.at(t) + reflection_direction * epsilon, reflection_direction);
+                Vector3::Color reflected_color = ray_color(reflected_ray, lightDirection);
+                return diffuse_color + reflected_color;
             }
+
+            return diffuse_color;
         }
         return Vector3::Color(0,0,0);
     }
-private:
+
+public:
+    bool isReflective = true;
+    double epsilon = 0.001;
     double radius = 0.5;
     Vector3::Point3 sphere_center{0, 0, -1};
     Vector3::Color sphere_color{1, 0, 0};
@@ -93,13 +100,15 @@ class Camera
 {
 public:
     Vector3::Point3 camera_center_{0, 0, 0};
+    int image_width;
+    int image_height;
+    Camera(int image_width, int image_height): image_height(image_height), image_width(image_width){}
 
-    Camera() = default;
+    Camera(Vector3::Point3 camera_center, int image_width, int image_height): camera_center_{camera_center},
+                                                                                    image_height(image_height), image_width(image_width){}
 
-    Camera(Vector3::Point3 camera_center): camera_center_{camera_center}{}
 
-
-    Vector3::Vector3 ray_direction(double image_width, double image_height, Vector3::Point3 spotted_Point)
+    Vector3::Vector3 ray_direction(Vector3::Point3 spotted_Point)
     {
         // Camera
 
@@ -131,15 +140,28 @@ public:
 
 };
 
+struct HitPayload
+{
+    float HitDistance;
+    Vector3::Vector3 WorldPosition;
+    Vector3::Vector3 WorldNormal;
+
+    int ObjectIndex;
+};
+
 class Scene
 {
 public:
     std::vector<Sphere> spheres_{Sphere()};
     std::vector<Light> lights_{Light()};
 
-    Camera camera_{Camera()};
+    Vector3::Color PerPixel(Vector3::Point3 pixel_point); //RayGen
+    HitPayload TraceRay(const Ray& ray);
+    HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
+    HitPayload Miss(const Ray& ray);
 
-    Scene() = default;
+    Camera camera_;
+
     Scene(std::vector<Sphere> spheres, std::vector<Light> lights, Camera camera): spheres_{std::move(spheres)},
                                                                                   lights_{std::move(lights)}, camera_{camera} {}
 };

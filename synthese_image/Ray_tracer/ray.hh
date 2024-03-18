@@ -12,6 +12,9 @@ public:
     Vector3::Point3 origine() const { return orig; }
     Vector3::Vector3 direction() const { return dir; }
 
+    void setorigine(Vector3::Vector3 origA){ orig = origA; }
+    void setdirection(Vector3::Vector3 dirA) { dir = dirA; }
+
     Vector3::Point3 at(double t) const{
         return t * dir + orig;
     }
