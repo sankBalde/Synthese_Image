@@ -20,22 +20,22 @@ int main() {
     std::vector<std::vector<Vector3::Color>> pixels_(image_width, std::vector<Vector3::Color>(image_height));
 
     //spheres
-    Vector3::Point3 sphere1_center{-0,0,-1};
-    Vector3::Point3 sphere2_center{0,-100.5,-1};
+    Vector3::Point3 sphere1_center{ 0.0, -100.5, -10.0};
+    Vector3::Point3 sphere2_center{0.0,    0.0, -1.0};
     Vector3::Color sphere1_color{1, 0, 0};
-    Vector3::Color sphere2_color{0.5, 0.3, 1};
-    Sphere sphere1{sphere1_center, 0.5, sphere1_color};
-    Sphere sphere2{sphere2_center, 100, sphere2_color};
+    Vector3::Color sphere2_color{0, 0, 1};
+    Sphere sphere1{sphere1_center, 100, sphere1_color};
+    Sphere sphere2{sphere2_center, 0.5, sphere2_color};
     sphere1.setTextureMaterial(UniformTexture());
     sphere2.setTextureMaterial(UniformTexture());
     std::vector<Sphere> spheres{sphere1, sphere2};
 
     //camera
-    Vector3::Point3 camera_center{0, 0, 0};
+    Vector3::Point3 camera_center{0,0,0};
     Camera camera{camera_center, image_width, image_height};
 
     //lights
-    Vector3::Vector3 lightdirection{-1, -1, -5};
+    Vector3::Vector3 lightdirection{4, 1, 4};
     Light light1{lightdirection};
     std::vector<Light> lights{light1};
 
@@ -95,6 +95,6 @@ int main() {
 
 
     auto img = Image(image_width, image_height, pixels_);
-    img.save_image("../../../../Desktop/solarSystem3.ppm");
+    img.save_image("../../../../Desktop/shadowHit.ppm");
     //img.save_image("images/imgRendered.ppm");
 }

@@ -156,7 +156,7 @@ public:
     std::vector<Light> lights_{Light()};
 
     Vector3::Color PerPixel(Vector3::Point3 pixel_point); //RayGen
-    HitPayload TraceRay(const Ray& ray);
+    HitPayload TraceRay(const Ray& ray, int ignore_object_index);
     HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
     HitPayload Miss(const Ray& ray);
 

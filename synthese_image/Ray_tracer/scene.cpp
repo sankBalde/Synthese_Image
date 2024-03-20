@@ -33,20 +33,66 @@ double random_double() {
     return rand() / (RAND_MAX + 1.0);
 }
 
+double euclidean_distance(Vector3::Vector3 v1,Vector3::Vector3 v2) {
+    double dx = v1.x - v2.x;
+    double dy = v1.y - v2.y;
+    double dz = v1.z - v2.z;
+    return std::sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+
 Vector3::Color Scene::PerPixel(Vector3::Point3 pixel_point) {
 
     auto rayDirection = camera_.ray_direction(pixel_point);
     Ray ray{camera_.camera_center_, rayDirection};
 
     Vector3::Vector3 light{0,0,0};
-    Vector3::Vector3 lightDire{-1,-1,-1};
+    Vector3::Vector3 lightDire{-1, -1, -1};
     //Vector3::Vector3 contribution{1.0, 1.0, 1.0};
     double multiplier = 1.0f;
     lightDire = Vector3::unit_vector(lightDire);
-    int bounces = 3;
+
+    // ombre
+    // Pour chaque source lumineuse
+    for (const auto& lightA : lights_) {
+        Vector3::Vector3 lightDirection = lightA.lightdirection_;
+
+        bool inShadow = false;
+        double epsilon = 0.0001f;
+        HitPayload firstHit = TraceRay(ray, -1);
+
+        // Vérifier s'il y a une intersection avec un objet entre le point d'intersection et la source lumineuse
+        HitPayload shadowHit = TraceRay(Ray{firstHit.WorldPosition, lightDirection}, firstHit.ObjectIndex);
+        double distance_one = euclidean_distance(firstHit.WorldPosition, lightDirection);
+        double distance_two = euclidean_distance(firstHit.WorldPosition, shadowHit.WorldPosition);
+        if (shadowHit.HitDistance > 0  && distance_one > distance_two) {
+            inShadow = true;
+        }
+
+        if (firstHit.HitDistance > 0) {
+            if (inShadow)
+                return light;
+            // Pas dans l'ombre, calculer la couleur en tenant compte de la lumière directe
+            Vector3::Vector3 normal = firstHit.WorldNormal;
+            double cos_angle_normal_light = to_positive(Vector3::dot(normal, -lightDirection));
+            Vector3::Color diffuse_color = spheres_[firstHit.ObjectIndex].sphere_color * cos_angle_normal_light;
+
+            // Ajouter la contribution de la lumière directe à la couleur finale
+            light += diffuse_color;
+            return spheres_[firstHit.ObjectIndex].sphere_color;
+            //std::cout << light;
+        }
+        else
+        {
+            Vector3::Vector3 skyColor(0.6f, 0.7f, 0.9f);
+            return light;
+        }
+    }
+
+    int bounces = 1;
     for (int i = 0; i < bounces; i++)
     {
-        HitPayload payload = TraceRay(ray);
+        HitPayload payload = TraceRay(ray, -1);
         if (payload.HitDistance < 0.0f)
         {
             //Vector3::Vector3 skyColor(0.6f, 0.7f, 0.9f);
@@ -79,34 +125,35 @@ Vector3::Color Scene::PerPixel(Vector3::Point3 pixel_point) {
 
 
 
-HitPayload Scene::TraceRay(const Ray &ray) {
+HitPayload Scene::TraceRay(const Ray &ray, int ignore_object_index) {
     int closestSphere = -1;
     float hitDistance = std::numeric_limits<float>::max();
     for (size_t i = 0; i < spheres_.size(); i++)
     {
-        const Sphere& sphere = spheres_[i];
-        Vector3::Vector3 origin = ray.origine() - sphere.sphere_center;
+        if (ignore_object_index != i) {
+            const Sphere &sphere = spheres_[i];
+            Vector3::Vector3 origin = ray.origine() - sphere.sphere_center;
 
-        float a = Vector3::dot(ray.direction(), ray.direction());
-        float b = 2.0f * Vector3::dot(origin, ray.direction());
-        float c = Vector3::dot(origin, origin) - sphere.radius * sphere.radius;
+            float a = Vector3::dot(ray.direction(), ray.direction());
+            float b = 2.0f * Vector3::dot(origin, ray.direction());
+            float c = Vector3::dot(origin, origin) - sphere.radius * sphere.radius;
 
-        // Quadratic forumula discriminant:
-        // b^2 - 4ac
+            // Quadratic forumula discriminant:
+            // b^2 - 4ac
 
-        float discriminant = b * b - 4.0f * a * c;
-        if (discriminant < 0.0f)
-            continue;
+            float discriminant = b * b - 4.0f * a * c;
+            if (discriminant < 0.0f)
+                continue;
 
-        // Quadratic formula:
-        // (-b +- sqrt(discriminant)) / 2a
+            // Quadratic formula:
+            // (-b +- sqrt(discriminant)) / 2a
 
-        // float t0 = (-b + sqrt(discriminant)) / (2.0f * a); // Second hit distance (currently unused)
-        float closestT = (-b - sqrt(discriminant)) / (2.0f * a);
-        if (closestT > 0.0f && closestT < hitDistance)
-        {
-            hitDistance = closestT;
-            closestSphere = (int)i;
+            // float t0 = (-b + sqrt(discriminant)) / (2.0f * a); // Second hit distance (currently unused)
+            float closestT = (-b - sqrt(discriminant)) / (2.0f * a);
+            if (closestT > 0.0f && closestT < hitDistance) {
+                hitDistance = closestT;
+                closestSphere = (int) i;
+            }
         }
     }
 
