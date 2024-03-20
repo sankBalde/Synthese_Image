@@ -71,15 +71,15 @@ int main() {
 
 // Caméra
     Vector3::Point3 camera_center{0, 0, 5};
-    Camera camera{camera_center};
+    Camera camera{camera_center, image_width, image_height};
 
 // Lumière
     Vector3::Vector3 light_direction{0, 0, -1};
     Light light1{light_direction};
     std::vector<Light> lights{light1};
 
-    auto scene = Scene(spheres, lights, camera);*/
-
+    auto scene = Scene(spheres, lights, camera);
+    */
 
     // Render
 
@@ -95,6 +95,6 @@ int main() {
 
 
     auto img = Image(image_width, image_height, pixels_);
-    img.save_image("../../../../Desktop/shadowHit.ppm");
+    img.save_image("../Ray_tracer/images/sha_re_sphe.ppm");
     //img.save_image("images/imgRendered.ppm");
 }

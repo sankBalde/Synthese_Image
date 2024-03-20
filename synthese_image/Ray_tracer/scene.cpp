@@ -72,24 +72,10 @@ Vector3::Color Scene::PerPixel(Vector3::Point3 pixel_point) {
         if (firstHit.HitDistance > 0) {
             if (inShadow)
                 return light;
-            // Pas dans l'ombre, calculer la couleur en tenant compte de la lumière directe
-            Vector3::Vector3 normal = firstHit.WorldNormal;
-            double cos_angle_normal_light = to_positive(Vector3::dot(normal, -lightDirection));
-            Vector3::Color diffuse_color = spheres_[firstHit.ObjectIndex].sphere_color * cos_angle_normal_light;
-
-            // Ajouter la contribution de la lumière directe à la couleur finale
-            light += diffuse_color;
-            return spheres_[firstHit.ObjectIndex].sphere_color;
-            //std::cout << light;
-        }
-        else
-        {
-            Vector3::Vector3 skyColor(0.6f, 0.7f, 0.9f);
-            return light;
         }
     }
 
-    int bounces = 1;
+    int bounces = 5;
     for (int i = 0; i < bounces; i++)
     {
         HitPayload payload = TraceRay(ray, -1);
