@@ -71,7 +71,7 @@ Vector3::Color Scene::PerPixel(Vector3::Point3 pixel_point) {
         }
     }
 
-    int bounces = 5;
+    int bounces = 1;
     for (int i = 0; i < bounces; i++)
     {
         HitPayload payload = TraceRay(ray, -1);

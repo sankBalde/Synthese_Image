@@ -4,6 +4,7 @@
 #include "vector3.hh"
 #include "ray.hh"
 
+constexpr double EPSILON = 1e-6;
 inline double to_positive(double dot) {
     if (dot < 0.0)
         return 0.0;
@@ -16,7 +17,6 @@ public:
     virtual double hit_object(const Ray& r) const = 0;
     virtual Vector3::Vector3 normal_vector(const Ray& r, double t) const = 0;
     virtual Vector3::Color getobjetColor() const = 0;
-    virtual Vector3::Vector3 getObjetCenter() const = 0;
     virtual ~Object() {}
 
     void setTextureMaterial(const TextureMaterial& textureMaterial) {
@@ -24,6 +24,50 @@ public:
     }
 
     const TextureMaterial* textureMaterial;
+};
+
+class Triangle : public Object
+{
+public:
+    double abs(double val) const {
+        if (val < 0) return -val;
+        else return val;
+    }
+    Triangle(Vector3::Vector3 v0, Vector3::Vector3 v1, Vector3::Vector3 v2, Vector3::Color triangle_color): v0{v0},
+    v1{v1}, v2{v2}, triangle_color{triangle_color} {}
+    double hit_object(const Ray& r) const override{
+
+        Vector3::Vector3 v0v1 = v1 - v0;
+        Vector3::Vector3 v0v2 = v2 - v0;
+        Vector3::Vector3 pvec = Vector3::cross(r.direction(), v0v2);
+        double det = Vector3::dot(pvec, v0v1);
+        if (abs(det) < EPSILON) return -1;
+
+        float invDet = 1 / det;
+
+        Vector3::Vector3 tvec = r.origine() - v0;
+        double u = Vector3::dot(tvec, pvec) * invDet;
+        if (u < 0 || u > 1) return false;
+
+        Vector3::Vector3 qvec = Vector3::cross(tvec, v0v1);
+        double v = Vector3::dot(r.direction(), qvec) * invDet;
+        if (v < 0 || u + v > 1) return false;
+
+        double t = Vector3::dot(v0v2, qvec) * invDet;
+        return t;
+    }
+    Vector3::Vector3 normal_vector(const Ray& r, double t) const override{
+        return Vector3::unit_vector(Vector3::cross(v1-v0, v2- v0));
+    }
+    Vector3::Color getobjetColor() const override{
+        return triangle_color;
+
+    }
+private:
+    Vector3::Vector3 v0;
+    Vector3::Vector3 v1;
+    Vector3::Vector3 v2;
+    Vector3::Color triangle_color;
 };
 
 class Sphere : public Object
@@ -60,10 +104,6 @@ public:
 
     Vector3::Color getobjetColor() const override{
         return sphere_color;
-    }
-
-    Vector3::Vector3 getObjetCenter() const override{
-        return sphere_center;
     }
 
 

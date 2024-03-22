@@ -22,13 +22,22 @@ int main() {
     //spheres
     Vector3::Point3 sphere1_center{ 0.0, -100.5, -10.0};
     Vector3::Point3 sphere2_center{0.0,    0.0, -1.0};
+
     Vector3::Color sphere1_color{1, 0, 0};
     Vector3::Color sphere2_color{0, 0, 1};
     Sphere sphere1{sphere1_center, 100, sphere1_color};
     Sphere sphere2{sphere2_center, 0.5, sphere2_color};
     sphere1.setTextureMaterial(UniformTexture());
     sphere2.setTextureMaterial(UniformTexture());
-    std::vector<Object *> spheres{&sphere1, &sphere2};
+    // Création du triangle
+    Vector3::Vector3 vertex0{-2, -1.0, 0.0};
+    Vector3::Vector3 vertex1{2, -1.0, 0.0};
+    Vector3::Vector3 vertex2{0.0, 1.0, 0.0};
+    Vector3::Color triangle_color{0, 1, 0}; // Couleur du triangle
+    Triangle triangle{vertex0, vertex1, vertex2, triangle_color};
+    triangle.setTextureMaterial(UniformTexture());
+    // Ajout du triangle à la liste d'objets
+    std::vector<Object*> objects{&sphere1, &sphere2, &triangle};
 
     //camera
     Vector3::Point3 camera_center{0,0,0};
@@ -39,7 +48,7 @@ int main() {
     Light light1{lightdirection};
     std::vector<Light> lights{light1};
 
-    Scene scene{spheres, lights, camera};
+    Scene scene{objects, lights, camera};
     //auto scene = Scene();
     // Sphères
     /*Vector3::Point3 sun_center{0, 0, 0};
