@@ -15,7 +15,8 @@ class Object {
 public:
     virtual double hit_object(const Ray& r) const = 0;
     virtual Vector3::Vector3 normal_vector(const Ray& r, double t) const = 0;
-    virtual Vector3::Color ray_color(const Ray& r, const Vector3::Vector3& lightDirection) const = 0;
+    virtual Vector3::Color getobjetColor() const = 0;
+    virtual Vector3::Vector3 getObjetCenter() const = 0;
     virtual ~Object() {}
 
     void setTextureMaterial(const TextureMaterial& textureMaterial) {
@@ -34,7 +35,7 @@ public:
                                                                                         sphere_center{sphere_center},
                                                                                         sphere_color{sphere_color}{}
 
-    double hit_object(const Ray& r) const override{
+    double hit_object(const Ray& r) const override {
         Vector3::Vector3 oc = r.origine() - sphere_center;
         auto a = dot(r.direction(), r.direction());
         auto b = 2.0 * dot(oc, r.direction());
@@ -46,39 +47,27 @@ public:
             return (-b - sqrt(discriminant) ) / (2.0*a);
         }
     }
-
     Vector3::Vector3 normal_vector(const Ray& r, double t) const override
     {
         Vector3::Vector3 normal = unit_vector(r.at(t) - sphere_center);
         return normal;
     }
+
+
     static Vector3::Vector3 reflect(const Vector3::Vector3& incident, const Vector3::Vector3& normal)  {
         return incident - 2 * dot(incident, normal) * normal;
     }
 
-    Vector3::Color ray_color(const Ray& r, const Vector3::Vector3& lightDirection) const override {
-        auto t = hit_object(r);
-        if (t > 0.0) {
-            Vector3::Vector3 normal = normal_vector(r, t);
-            double cos_angle_normal_light = to_positive(Vector3::dot(normal, -lightDirection));
-            Vector3::Color diffuse_color = sphere_color * cos_angle_normal_light;
-
-            // Gérer la réflexion si la sphère est réfléchissante
-            if (isReflective) {
-                Vector3::Vector3 reflection_direction = reflect(r.direction(), normal);
-                Ray reflected_ray(r.at(t) + reflection_direction * epsilon, reflection_direction);
-                Vector3::Color reflected_color = ray_color(reflected_ray, lightDirection);
-                return diffuse_color + reflected_color;
-            }
-
-            return diffuse_color;
-        }
-        return Vector3::Color(0,0,0);
+    Vector3::Color getobjetColor() const override{
+        return sphere_color;
     }
 
-public:
-    bool isReflective = true;
-    double epsilon = 0.001;
+    Vector3::Vector3 getObjetCenter() const override{
+        return sphere_center;
+    }
+
+
+private:
     double radius = 0.5;
     Vector3::Point3 sphere_center{0, 0, -1};
     Vector3::Color sphere_color{1, 0, 0};
@@ -152,7 +141,7 @@ struct HitPayload
 class Scene
 {
 public:
-    std::vector<Sphere> spheres_{Sphere()};
+    std::vector<Object*> objects_{};
     std::vector<Light> lights_{Light()};
 
     Vector3::Color PerPixel(Vector3::Point3 pixel_point); //RayGen
@@ -162,6 +151,6 @@ public:
 
     Camera camera_;
 
-    Scene(std::vector<Sphere> spheres, std::vector<Light> lights, Camera camera): spheres_{std::move(spheres)},
+    Scene(std::vector<Object*> objects, std::vector<Light> lights, Camera camera): objects_{std::move(objects)},
                                                                                   lights_{std::move(lights)}, camera_{camera} {}
 };

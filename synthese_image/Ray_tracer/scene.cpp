@@ -10,14 +10,10 @@ HitPayload Scene::ClosestHit(const Ray &ray, float hitDistance, int objectIndex)
     payload.HitDistance = hitDistance;
     payload.ObjectIndex = objectIndex;
 
-    const Sphere& closestSphere = spheres_[objectIndex];
+    auto closestObject = objects_[objectIndex];
 
-    Vector3::Vector3 origin = ray.origine() - closestSphere.sphere_center;
-    //Vector3::Vector3 origin = closestSphere.sphere_center;
-    payload.WorldPosition = origin + ray.direction() * hitDistance;
-    payload.WorldNormal = Vector3::unit_vector(payload.WorldPosition);
-
-    payload.WorldPosition += closestSphere.sphere_center;
+    payload.WorldPosition = ray.at(hitDistance);
+    payload.WorldNormal = closestObject->normal_vector(ray, hitDistance);
 
     return payload;
 }
@@ -89,15 +85,15 @@ Vector3::Color Scene::PerPixel(Vector3::Point3 pixel_point) {
             break;
         }
 
-        const Sphere& sphere = spheres_[payload.ObjectIndex];
+        auto object = objects_[payload.ObjectIndex];
 
         //contribution = contribution * sphere.sphere_color;
 
         Vector3::Vector3 normal = payload.WorldNormal;
         double cos_angle_normal_light = to_positive(Vector3::dot(normal, -lightDire));
-        Vector3::Color diffuse_color = sphere.sphere_color * cos_angle_normal_light;
+        Vector3::Color diffuse_color = object->getobjetColor() * cos_angle_normal_light;
 
-        light += diffuse_color * multiplier * sphere.textureMaterial->getParametersAtPosition(pixel_point);
+        light += diffuse_color * multiplier * object->textureMaterial->getParametersAtPosition(pixel_point);
 
         multiplier *= 0.7f;
 
@@ -114,28 +110,11 @@ Vector3::Color Scene::PerPixel(Vector3::Point3 pixel_point) {
 HitPayload Scene::TraceRay(const Ray &ray, int ignore_object_index) {
     int closestSphere = -1;
     float hitDistance = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < spheres_.size(); i++)
+    for (size_t i = 0; i < objects_.size(); i++)
     {
         if (ignore_object_index != i) {
-            const Sphere &sphere = spheres_[i];
-            Vector3::Vector3 origin = ray.origine() - sphere.sphere_center;
-
-            float a = Vector3::dot(ray.direction(), ray.direction());
-            float b = 2.0f * Vector3::dot(origin, ray.direction());
-            float c = Vector3::dot(origin, origin) - sphere.radius * sphere.radius;
-
-            // Quadratic forumula discriminant:
-            // b^2 - 4ac
-
-            float discriminant = b * b - 4.0f * a * c;
-            if (discriminant < 0.0f)
-                continue;
-
-            // Quadratic formula:
-            // (-b +- sqrt(discriminant)) / 2a
-
-            // float t0 = (-b + sqrt(discriminant)) / (2.0f * a); // Second hit distance (currently unused)
-            float closestT = (-b - sqrt(discriminant)) / (2.0f * a);
+            auto object = objects_[i];
+            float closestT = object->hit_object(ray);
             if (closestT > 0.0f && closestT < hitDistance) {
                 hitDistance = closestT;
                 closestSphere = (int) i;

@@ -28,7 +28,7 @@ int main() {
     Sphere sphere2{sphere2_center, 0.5, sphere2_color};
     sphere1.setTextureMaterial(UniformTexture());
     sphere2.setTextureMaterial(UniformTexture());
-    std::vector<Sphere> spheres{sphere1, sphere2};
+    std::vector<Object *> spheres{&sphere1, &sphere2};
 
     //camera
     Vector3::Point3 camera_center{0,0,0};
@@ -95,6 +95,6 @@ int main() {
 
 
     auto img = Image(image_width, image_height, pixels_);
-    img.save_image("../Ray_tracer/images/sha_re_sphe.ppm");
+    img.save_image("../../../../Desktop/sha_re_sphe.ppm");
     //img.save_image("images/imgRendered.ppm");
 }
